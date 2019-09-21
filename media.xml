@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!DOCTYPE scenario SYSTEM "sipp.dtd">
+
+<scenario name="Basic UAS called responder">
+
+  <recv request="INVITE" crlf="true"></recv>
+  <send>
+    <![CDATA[
+      SIP/2.0 100 Trying
+      [last_From:] [last_To:];tag=[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      [last_Via:]
+      Contact: <sip:[local_ip]:[local_port];transport=[transport]>
+      Content-Length: 0
+    ]]>
+  </send>
+
+  <send>
+    <![CDATA[
+      SIP/2.0 180 Ringing
+      [last_From:] [last_To:];tag=[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      [last_Via:]
+      Contact: <sip:[local_ip]:[local_port];transport=[transport]>
+      Content-Length: 0
+    ]]>
+  </send>
+
+
+  <send retrans="500">
+    <![CDATA[
+  SIP/2.0 200 OK
+  [last_From:] [last_To:];tag=[call_number]
+  [last_Call-ID:]
+  [last_CSeq:]
+  [last_Via:]
+  [last_Via:]
+  Contact: <sip:[local_ip]:[local_port];transport=[transport]>
+  Record-Route: <sip:[remote_ip];lr>
+  Allow: PRACK, INVITE, ACK, BYE, CANCEL, UPDATE, INFO, SUBSCRIBE, NOTIFY, REFER, MESSAGE, OPTIONS
+  Supported: replaces, 100rel, timer, norefersub
+  Content-Type: application/sdp
+  Content-Length: [len]
+  
+  v=0
+  o=- 3699755703 3699755703 IN IP[local_ip_type] [media_ip]
+  s=sipp
+  c=IN IP[media_ip_type] [media_ip]
+  b=AS:8484
+  t=0 0
+  m=audio [media_port] RTP/AVP 8 9 103
+  b=TIAS:64000
+  a=sendrecv
+  a=rtpmap:103 telephone-event/8000
+  a=fmtp:103 0-15
+  m=video [media_port+2] RTP/AVP 96
+  b=TIAS:4000000
+  a=sendrecv
+  a=rtpmap:96 H264/90000
+  a=fmtp:96 profile-level-id=42e01F;max-br=7680;max-mbps=115000;max-fs=3840;packetization-mode=0
+  a=rtcp-fb:* ccm fir
+  a=rtcp-fb:* nack
+  a=rtcp-fb:* ccm tmmbr
+ ]]>
+  </send>
+
+  <recv request="ACK">
+    <action>
+      <ereg regexp=".*" search_in="body" assign_to="1" />
+      <exec command="./play.sh start [call_id] '[$1]' " />
+    </action>
+  </recv>
+
+  <nop>
+    <action>
+      <!--exec play_pcap_video="2.pcap"/-->
+      <!-- exec command=""/-->
+    </action>
+  </nop>
+
+  <recv request="BYE">
+    <action>
+      <exec command="./play.sh stop [call_id] " />
+    </action>
+  </recv>
+  <send>
+    <![CDATA[
+      SIP/2.0 200 OK
+      [last_Via:]
+      [last_From:]
+      [last_To:]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Contact: <sip:[local_ip]:[local_port];transport=[transport]>
+      Content-Length: 0
+    ]]>
+  </send>
+
+  <ResponseTimeRepartition value="10, 20, 30, 40, 50, 100, 150, 200"/>
+
+  <CallLengthRepartition value="10, 50, 100, 500, 1000, 5000, 10000"/>
+</scenario>
